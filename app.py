@@ -1,40 +1,25 @@
 import streamlit as st
-from moviepy.editor import ImageSequenceClip
-import tempfile
-import os
+from moviepy.editor import ImageClip
 
-st.title("🖼️➡️🎬 JPG a MP4")
+st.title("🖼️ JPG → 🎬 MP4 Converter")
 
-# Subir varias imágenes
-imagenes = st.file_uploader(
-    "Sube tus imágenes JPG",
-    type=["jpg", "jpeg", "png"],
-    accept_multiple_files=True
-)
+uploaded_file = st.file_uploader("Sube una imagen JPG", type=["jpg", "jpeg", "png"])
 
-fps = st.slider("Fotogramas por segundo (FPS)", 1, 60, 24)
+if uploaded_file is not None:
+    with open("temp.jpg", "wb") as f:
+        f.write(uploaded_file.read())
 
-if st.button("Crear video"):
-    if not imagenes:
-        st.warning("⚠️ Sube al menos una imagen primero.")
-    else:
-        # Guardar las imágenes temporalmente
-        temp_dir = tempfile.mkdtemp()
-        rutas = []
-        for i, img in enumerate(imagenes):
-            ruta = os.path.join(temp_dir, f"frame_{i:03d}.jpg")
-            with open(ruta, "wb") as f:
-                f.write(img.read())
-            rutas.append(ruta)
+    with st.spinner("🎬 Generando tu video... espera un momento..."):
+        clip = ImageClip("temp.jpg", duration=60)
+        clip = clip.set_fps(24)
 
-        # Crear el video
-        clip = ImageSequenceClip(rutas, fps=fps)
-        video_path = os.path.join(temp_dir, "output.mp4")
-        clip.write_videofile(video_path, codec="libx264")
+        output_file = "output.mp4"
+        clip.write_videofile(output_file, codec="libx264", audio=False)
 
-        # Mostrar el video en la app
-        st.video(video_path)
-
-        # Botón de descarga
-        with open(video_path, "rb") as f:
-            st.download_button("📥 Descargar MP4", f, file_name="video.mp4")
+    with open(output_file, "rb") as f:
+        st.download_button(
+            label="⬇️ Descargar MP4",
+            data=f,
+            file_name="video.mp4",
+            mime="video/mp4"
+        )
